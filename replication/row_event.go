@@ -195,6 +195,14 @@ func (e *TableMapEvent) Dump(w io.Writer) {
 	fmt.Fprintln(w)
 }
 
+func (e *TableMapEvent) GetMeta() (QueryMeta, error) {
+	var m QueryMeta
+	m.Schema = fmt.Sprintf("%s",e.Schema)
+	m.Table = fmt.Sprintf("%s",e.Table)
+	m.TableID = e.TableID
+	return m, nil
+}
+
 // RowsEventStmtEndFlag is set in the end of the statement.
 const RowsEventStmtEndFlag = 0x01
 
@@ -867,22 +875,28 @@ func decodeBlob(data []byte, meta uint16) (v []byte, n int, err error) {
 }
 
 func (e *RowsEvent) Dump(w io.Writer) {
-	fmt.Fprintf(w, "TableID: %d\n", e.TableID)
-	fmt.Fprintf(w, "Flags: %d\n", e.Flags)
-	fmt.Fprintf(w, "Column count: %d\n", e.ColumnCount)
+	fmt.Fprintf(w, "  TableID: %d\n", e.TableID)
+	fmt.Fprintf(w, "  Flags: %d\n", e.Flags)
+	fmt.Fprintf(w, "  Column count: %d\n", e.ColumnCount)
 
-	fmt.Fprintf(w, "Values:\n")
+	fmt.Fprintf(w, "  Values:\n")
 	for _, rows := range e.Rows {
-		fmt.Fprintf(w, "--\n")
+		fmt.Fprintf(w, "   +--\n")
 		for j, d := range rows {
 			if _, ok := d.([]byte); ok {
-				fmt.Fprintf(w, "%d:%q\n", j, d)
+				fmt.Fprintf(w, "    %d:%q\n", j, d)
 			} else {
-				fmt.Fprintf(w, "%d:%#v\n", j, d)
+				fmt.Fprintf(w, "    %d:%#v\n", j, d)
 			}
 		}
 	}
 	fmt.Fprintln(w)
+}
+
+func (e *RowsEvent) GetMeta() (QueryMeta, error) {
+	var m QueryMeta
+	m.TableID = e.TableID
+	return m, nil
 }
 
 type RowsQueryEvent struct {
@@ -898,4 +912,8 @@ func (e *RowsQueryEvent) Decode(data []byte) error {
 func (e *RowsQueryEvent) Dump(w io.Writer) {
 	fmt.Fprintf(w, "Query: %s\n", e.Query)
 	fmt.Fprintln(w)
+}
+
+func (e *RowsQueryEvent) GetMeta() (QueryMeta, error) {
+	return QueryMeta{}, errors.Errorf("error")
 }
